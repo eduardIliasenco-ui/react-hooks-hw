@@ -1,60 +1,80 @@
-import React, { Component, Fragment } from 'react';
-import Input from 'components/Input';
+import React, { useState, Fragment, useCallback } from "react";
+import Input from "components/Input";
 
-import { StyledEdit, StyledTask, StyledDelete, StyledText, StyledButton, StyledEditForm, StyledButtonsWrapper } from './styles';
+import {
+  StyledEdit,
+  StyledTask,
+  StyledDelete,
+  StyledDone,
+  StyledText,
+  StyledButton,
+  StyledEditForm,
+  StyledButtonsWrapper,
+} from "./styles";
 
-class Task extends Component {
-    state = {
-        editValue: '',
-        isEdit: false,
-    };
+const Task = ({
+  onDelete,
+  onCompleted,
+  onSave,
+  children,
+  id,
+  isCompleted,
+  isTaskExists,
+}) => {
+  const [editValue, setEditValue] = useState("");
+  const [isEdit, setEdit] = useState(false);
 
-    onEditChange = (value) => this.setState({ editValue: value });
+  const onEditChange = useCallback((value) => setEditValue(value), [
+    setEditValue,
+  ]);
 
-    onEditPress = () => this.setState({ editValue: this.props.children, isEdit: true });
+  const onEditPress = useCallback(() => {
+    setEditValue(children);
+    setEdit(true);
+  }, [setEditValue, setEdit, children]);
 
-    onSaveEdit = (e) => {
-        e.preventDefault();
+  const onSaveEdit = useCallback(
+    (e) => {
+      e.preventDefault();
 
-        const { editValue } = this.state;
+      if (editValue && !isTaskExists(editValue)) {
+        onSave(editValue, id);
+        setEditValue("");
+        setEdit(false);
+      }
+    },
+    [onSave, setEditValue, setEdit, isTaskExists, id, editValue]
+  );
 
-        if (editValue) {
-            const { id } = this.props;
+  return (
+    <StyledTask>
+      {isEdit ? (
+        <StyledEditForm onSubmit={onSaveEdit} onBlur={onSaveEdit}>
+          <Input
+            onChange={onEditChange}
+            value={editValue}
+            placeholder="Task must contain title"
+          />
+        </StyledEditForm>
+      ) : (
+        <Fragment>
+          <StyledText isCompleted={isCompleted}>{children}</StyledText>
 
-            this.props.onSave({ id, text: this.state.editValue });
-            this.setState({ editValue: '', isEdit: false });
-        }
-    };
-
-    render() {
-        const { onDelete, children, id } = this.props;
-
-        return (
-            <StyledTask>
-                {this.state.isEdit ? (
-                    <StyledEditForm onSubmit={this.onSaveEdit} onBlur={this.onSaveEdit} >
-                        <Input 
-                            onChange={this.onEditChange} value={this.state.editValue}
-                            placeholder="Task must contain title"
-                        />
-                    </StyledEditForm>
-                ) : (
-                    <Fragment>
-                        <StyledText>{children}</StyledText>
-
-                        <StyledButtonsWrapper>
-                            <StyledButton onClick={this.onEditPress}>
-                                <StyledEdit />
-                            </StyledButton>
-                            <StyledButton onClick={() => onDelete(id)}>
-                                <StyledDelete />
-                            </StyledButton>
-                        </StyledButtonsWrapper>
-                    </Fragment>
-                )}
-            </StyledTask>
-        );
-    }
-}
+          <StyledButtonsWrapper>
+            <StyledButton onClick={() => onCompleted(id)}>
+              <StyledDone />
+            </StyledButton>
+            <StyledButton onClick={onEditPress}>
+              <StyledEdit />
+            </StyledButton>
+            <StyledButton onClick={() => onDelete(id)}>
+              <StyledDelete />
+            </StyledButton>
+          </StyledButtonsWrapper>
+        </Fragment>
+      )}
+    </StyledTask>
+  );
+};
 
 export default Task;
