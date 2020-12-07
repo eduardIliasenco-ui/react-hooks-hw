@@ -1,42 +1,45 @@
-import React, { Component } from 'react';
-import Input from 'components/Input';
-import { TaskListConsumer } from 'context/taskList.context';
+import React, { useContext, useState, useMemo, useCallback } from "react";
+import Input from "components/Input";
+import { TaskListContext } from "context/taskList.context";
 
-import { StyledForm, StyledAddButton } from './styles';
+import { StyledForm, StyledAddButton } from "./styles";
 
-class Form extends Component {
-    state = {
-        inputValue: '',
-    };
+const Form = () => {
+  const { taskList, dispatch } = useContext(TaskListContext);
+  const [inputValue, setInputValue] = useState("");
 
-    onChange = (value) => this.setState({ inputValue: value });
+  const onChange = useCallback(
+    (value) => {
+      setInputValue(value);
+    },
+    [setInputValue]
+  );
 
-    addTask = (e) => {
-        e.preventDefault();
-        const { inputValue } = this.state;
+  const handleAddTask = useCallback(
+    (e) => {
+      e.preventDefault();
+      if (inputValue) {
+        dispatch({ type: "ADD_TASK", payload: { task: inputValue } });
+        setInputValue("");
+      }
+    },
+    [inputValue]
+  );
 
-        if (inputValue) {
-            this.props.addTask({ text: inputValue });
-            this.setState({ inputValue: '' });
-        }
-    };
+  const isTaskExists = useMemo(
+    () => taskList.some(({ task }) => inputValue === task),
+    [taskList, inputValue]
+  );
 
-    render() {
-        const { inputValue } = this.state;
-        const isTaskExists = this.props.taskList.some(({ text }) => inputValue === text);
+  return (
+    <StyledForm onSubmit={handleAddTask}>
+      <Input value={inputValue} onChange={onChange} />
 
-        return (
-            <StyledForm onSubmit={this.addTask}>
-                <Input value={inputValue} onChange={this.onChange} />
+      <StyledAddButton disabled={isTaskExists || !inputValue}>
+        ADD TASK
+      </StyledAddButton>
+    </StyledForm>
+  );
+};
 
-                <StyledAddButton disabled={isTaskExists || !this.state.inputValue}>ADD TASK</StyledAddButton>
-            </StyledForm>
-        );
-    }
-}
-
-export default (componentProps) => (
-    <TaskListConsumer>
-        {props => <Form {...props} {...componentProps} />}
-    </TaskListConsumer>
-);
+export default Form;

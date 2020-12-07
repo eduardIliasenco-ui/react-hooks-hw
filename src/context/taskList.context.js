@@ -1,68 +1,27 @@
-import React, { Component, createContext } from 'react';
-import { v4 } from 'uuid';
-import { saveState } from '../utils/localStorage';
+import React, { createContext, useEffect, useReducer } from "react";
+import { taskReducer } from "../reducers/taskReducer";
 
-const TaskListContext = createContext({});
+export const TaskListContext = createContext({});
+const { Provider } = TaskListContext;
 
-export const { Provider, Consumer: TaskListConsumer } = TaskListContext;
+const TaskListProvider = ({ defaultState, children }) => {
+  const [list, dispatch] = useReducer(taskReducer, []);
 
-class TaskListProvider extends Component {
-    state = {
-        list: [],
-    };
+  useEffect(() => {
+    if (Array.isArray(defaultState))
+      dispatch({ type: "GET_STORAGE", payload: defaultState });
+  }, [defaultState, dispatch]);
 
-    constructor(props) {
-        super(props);
-
-        const { defaultState } = props;
-    
-        if (Array.isArray(defaultState)) this.state = {
-            list: [...defaultState],
-        };
-    }
-
-    addTask = ({ text, id }) => {
-        let task = id ? this.state.list.find(({ id: taskId }) => taskId === id) || { id: v4() } : { id: v4() };
-        
-        task = {
-            ...task,
-            text,
-        };
-
-        const state = [
-            task,
-            ...this.state.list.filter(({ id }) => id !== task.id),
-        ];
-
-        saveState(state);
-
-        return this.setState({ list: state });
-    };
-
-    removeTask = (taskId) => {
-        const state = [
-            ...this.state.list.filter(({ id }) => id !== taskId),
-        ];
-
-        saveState(state);
-
-        return this.setState({ list: state });
-    };
-
-    render() {
-        const { addTask, removeTask } = this;
-        const { children } = this.props;
-
-        return (
-            <Provider value={{
-                taskList: this.state.list,
-                addTask,
-                removeTask,
-            }}>
-                {children}
-            </Provider>
-        );
-    }
-}
+  return (
+    <Provider
+      value={{
+        taskList: list,
+        dispatch,
+      }}
+    >
+      {children}
+    </Provider>
+  );
+};
 
 export default TaskListProvider;
